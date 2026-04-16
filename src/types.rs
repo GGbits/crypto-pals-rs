@@ -25,15 +25,27 @@ impl fmt::Display for DecodeError {
 impl TryFrom<Hex> for Bytes {
     type Error = DecodeError;
     fn try_from(hex: Hex) -> Result<Self, Self::Error> {
-        if hex.0.len() % 2 != 0 {
+        if hex.0.len().is_multiple_of(2) {
             return Err(DecodeError(String::from(
                 "invalid hex string length. Expected len to be even, was odd.",
             )));
         }
 
-        for tup in hex.0.chars().tuples() {
-            //TODO: get the values from the tuple. Check if alpha or number. If number, keep val, if
-            //alpha 10 + val - 'a'
-        }
+        Ok(Bytes(hex.0.as_bytes().to_owned()))
+    }
+}
+
+impl From<Bytes> for Hex {
+    fn from(bytes: Bytes) -> Hex {
+        Hex(bytes
+            .0
+            .iter()
+            .flat_map(|b| {
+                let table = b"0123456789abcdef";
+                let high = table[(b >> 4) as usize] as char;
+                let low = table[(b & 0x0F) as usize] as char;
+                [high, low]
+            })
+            .collect::<String>())
     }
 }
