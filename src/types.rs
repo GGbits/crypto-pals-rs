@@ -1,6 +1,5 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::fmt;
-use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bytes(pub Vec<u8>);
@@ -17,6 +16,18 @@ pub struct DecodeError(pub String);
 impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "DecodeError: {}", self.0)
+    }
+}
+
+impl fmt::Display for Base64 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Display for Hex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -91,7 +102,7 @@ impl TryFrom<Base64> for Bytes {
     fn try_from(b64: Base64) -> Result<Bytes, Self::Error> {
         let s = b64.0.as_bytes();
 
-        if s.len() % 4 != 0 {
+        if !s.len().is_multiple_of(4) {
             return Err(DecodeError(String::from(
                 "invalid base64 length. Expected length to be a multiple of 4.",
             )));
