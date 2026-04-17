@@ -10,11 +10,11 @@ fn main() {
 
     match cli.command {
         Command::Convert { conversion } => match conversion {
-            Conversion::Base64Hex { input } => match Hex::try_from(Base64(input)) {
+            Conversion::Base64Hex { input } => match Hex::try_from(input) {
                 Ok(val) => println!("{}", val),
                 Err(err) => println!("{}", err),
             },
-            Conversion::HexBase64 { input } => match Base64::try_from(Hex(input)) {
+            Conversion::HexBase64 { input } => match Base64::try_from(input) {
                 Ok(val) => println!("{}", val),
                 Err(err) => println!("{}", err),
             },

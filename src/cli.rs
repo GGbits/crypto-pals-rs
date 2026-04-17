@@ -1,3 +1,4 @@
+use crate::{Base64, Hex};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -22,8 +23,14 @@ pub enum Command {
 // Convert options
 #[derive(Subcommand)]
 pub enum Conversion {
-    Base64Hex { input: String },
-    HexBase64 { input: String },
+    Base64Hex {
+        #[arg(value_parser = |s: &str| s.parse::<Base64>())]
+        input: Base64,
+    },
+    HexBase64 {
+        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
+        input: Hex,
+    },
 }
 
 #[derive(Subcommand)]

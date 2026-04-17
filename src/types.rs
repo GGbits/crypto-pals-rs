@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bytes(pub Vec<u8>);
@@ -28,6 +29,58 @@ impl fmt::Display for Base64 {
 impl fmt::Display for Hex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for DecodeError {}
+
+impl FromStr for Base64 {
+    type Err = DecodeError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trim_str = s.trim();
+
+        if !trim_str.len().is_multiple_of(4) {
+            return Err(DecodeError(String::from(
+                "invalid base64 length. Expected length to be a multiple of 4.",
+            )));
+        }
+
+        trim_str.chars().try_for_each(|c| {
+            match c {
+                'A'..='Z' => Ok(()),
+                'a'..='z' => Ok(()),
+                '0'..='9' => Ok(()),
+                '+' | '/' | '=' => Ok(()),
+                _ => Err(DecodeError(String::from(
+                    "invalid character. Found non-base64 character input. Please validate input is base64."
+                    ))),
+            }
+        })?;
+
+        Ok(Base64(trim_str.to_string()))
+    }
+}
+
+impl FromStr for Hex {
+    type Err = DecodeError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trim_str = s.to_lowercase().trim().to_owned();
+
+        if !trim_str.len().is_multiple_of(2) {
+            return Err(DecodeError(String::from(
+                "invalid hex string length. Expected len to be even, was odd.",
+            )));
+        }
+
+        trim_str.chars().try_for_each(|c| match c {
+            'a'..='f' => Ok(()),
+            '0'..='9' => Ok(()),
+            _ => Err(DecodeError(String::from(
+                "invalid character. Found non-hex character input. Please validate input is hex.",
+            ))),
+        })?;
+
+        Ok(Hex(trim_str.to_string()))
     }
 }
 
