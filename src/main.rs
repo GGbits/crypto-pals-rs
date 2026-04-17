@@ -10,14 +10,14 @@ fn main() {
 
     match cli.command {
         Command::Convert { conversion } => match conversion {
-            Conversion::Base64Hex { input } => {
-                let hex_string = Hex::from(Bytes::try_from(Base64(input)).unwrap());
-                println!("{}", hex_string);
-            }
-            Conversion::HexBase64 { input } => {
-                let b64_string = Base64::from(Bytes::try_from(Hex(input)).unwrap());
-                println!("{}", b64_string);
-            }
+            Conversion::Base64Hex { input } => match Hex::try_from(Base64(input)) {
+                Ok(val) => println!("{}", val),
+                Err(err) => println!("{}", err),
+            },
+            Conversion::HexBase64 { input } => match Base64::try_from(Hex(input)) {
+                Ok(val) => println!("{}", val),
+                Err(err) => println!("{}", err),
+            },
         },
 
         Command::Encode { encoding } => match encoding {

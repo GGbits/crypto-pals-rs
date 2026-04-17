@@ -181,6 +181,13 @@ impl From<Bytes> for Base64 {
 impl TryFrom<Base64> for Hex {
     type Error = DecodeError;
     fn try_from(b64: Base64) -> Result<Self, Self::Error> {
-        todo!()
+        Ok(Hex::from(Bytes::try_from(b64)?))
+    }
+}
+
+impl TryFrom<Hex> for Base64 {
+    type Error = DecodeError;
+    fn try_from(hex: Hex) -> Result<Self, Self::Error> {
+        Ok(Base64::from(Bytes::try_from(hex)?))
     }
 }
