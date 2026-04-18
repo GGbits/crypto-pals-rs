@@ -1,7 +1,7 @@
 mod cli;
 mod types;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use cli::{Cli, Command, Conversion, Encoding};
 use types::{Base64, Bytes, Hex};
 
@@ -22,10 +22,12 @@ fn main() {
 
         Command::Encode { encoding } => match encoding {
             Encoding::Base64 { input } => {
-                todo!();
+                let b64_str = Base64::from(Bytes(input.into_bytes()));
+                println!("{}", b64_str);
             }
             Encoding::Hex { input } => {
-                todo!();
+                let hex_str = Hex::from(Bytes(input.into_bytes()));
+                println!("{}", hex_str);
             }
         },
     }
