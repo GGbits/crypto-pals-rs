@@ -18,13 +18,17 @@ pub enum Command {
         #[command(subcommand)]
         encoding: Encoding,
     },
+    Xor {
+        #[command(subcommand)]
+        method: XorMethod,
+    },
 }
 
 // Convert options
 #[derive(Subcommand)]
 pub enum Conversion {
     Base64Hex {
-        #[arg(value_parser = |s: &str| s.parse::<Base64>())]
+        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
         input: Base64,
     },
     HexBase64 {
@@ -37,4 +41,14 @@ pub enum Conversion {
 pub enum Encoding {
     Hex { input: String },
     Base64 { input: String },
+}
+
+#[derive(Subcommand)]
+pub enum XorMethod {
+    Fixed {
+        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
+        hex_first: Hex,
+        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
+        hex_second: Hex,
+    },
 }
