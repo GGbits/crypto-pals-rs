@@ -1,4 +1,5 @@
 mod cli;
+mod score;
 mod types;
 
 use clap::Parser;
