@@ -3,11 +3,10 @@ mod score;
 mod types;
 
 use clap::Parser;
-use cli::{Cli, Command, Conversion, Encoding};
+use cli::{Cli, Command, Conversion, Encoding, Input, XorMethod};
 use types::{Base64, Bytes, Hex};
 
-use crate::cli::{Encryption, XorMethod};
-use crate::score::{ScoredCandidate, crack_single_byte_xor};
+use crate::score::crack_single_byte_xor;
 
 fn main() {
     let cli = Cli::parse();
@@ -56,7 +55,7 @@ fn main() {
                     }
                 };
 
-                let xored_hex: Hex = Hex::from(Bytes(
+                let xored_hex = Hex::from(Bytes(
                     bytes_first
                         .0
                         .iter()
@@ -67,25 +66,62 @@ fn main() {
 
                 println!("{}", xored_hex)
             }
-        },
 
-        Command::Crack { encryption } => match encryption {
-            Encryption::SingleByteXor { encryption_string } => {
-                let ciphertext = match Bytes::try_from(encryption_string) {
-                    Ok(val) => val,
+            XorMethod::Crack { input } => {
+                let hex_strings = match resolve_input(input) {
+                    Ok(v) => v,
                     Err(err) => {
                         println!("{}", err);
                         return;
                     }
                 };
 
-                let decoded_string = String::from_utf8_lossy(
-                    crack_single_byte_xor(&ciphertext).plaintext.0.as_slice(),
-                )
-                .to_string();
-                println!("{}", decoded_string);
+                let best = hex_strings
+                    .into_iter()
+                    .filter_map(|hex| Bytes::try_from(hex).ok())
+                    .flat_map(|bytes| crack_single_byte_xor(&bytes))
+                    .min_by(|a, b| a.score.total_cmp(&b.score));
+
+                match best {
+                    Some(result) => println!("{}", String::from_utf8_lossy(&result.plaintext.0)),
+                    None => println!("error: no valid candidates"),
+                }
+            }
+
+            XorMethod::Encrypt { input } => {
+                let key = rpassword::prompt_password("Key: ")
+                    .expect("failed to read key")
+                    .as_bytes()
+                    .to_vec();
+
+                let str_bytes = input.as_bytes().to_vec();
+
+                let xor_str = Hex::from(Bytes(
+                    key.iter()
+                        .cycle()
+                        .zip(str_bytes)
+                        .map(|(&k, s)| k ^ s)
+                        .collect::<Vec<u8>>(),
+                ));
+
+                println!("{}", xor_str);
             }
         },
+    }
+}
+
+fn resolve_input(input: Input) -> Result<Vec<Hex>, String> {
+    if let Some(val) = input.value {
+        let hex = val.parse::<Hex>().map_err(|e| e.to_string())?;
+        Ok(vec![hex])
+    } else if let Some(path) = input.file {
+        let contents = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        contents
+            .lines()
+            .map(|line| line.parse::<Hex>().map_err(|e| e.to_string()))
+            .collect()
+    } else {
+        Err("error: provide either a hex string or --file <path>".to_string())
     }
 }
 

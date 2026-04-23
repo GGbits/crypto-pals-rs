@@ -1,15 +1,16 @@
+use std::path::PathBuf;
+
 use crate::{Base64, Hex};
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
-pub struct Cli {
+pub(crate) struct Cli {
     #[command(subcommand)]
-    pub command: Command,
+    pub(crate) command: Command,
 }
 
-// Verbs
 #[derive(Subcommand)]
-pub enum Command {
+pub(crate) enum Command {
     Convert {
         #[command(subcommand)]
         conversion: Conversion,
@@ -22,15 +23,17 @@ pub enum Command {
         #[command(subcommand)]
         method: XorMethod,
     },
-    Crack {
-        #[command(subcommand)]
-        encryption: Encryption,
-    },
 }
 
-// Convert options
+#[derive(Args)]
+pub(crate) struct Input {
+    pub(crate) value: Option<String>,
+    #[arg(short, long)]
+    pub(crate) file: Option<PathBuf>,
+}
+
 #[derive(Subcommand)]
-pub enum Conversion {
+pub(crate) enum Conversion {
     Base64Hex {
         #[arg(value_parser = |s: &str| s.parse::<Hex>())]
         input: Base64,
@@ -42,25 +45,24 @@ pub enum Conversion {
 }
 
 #[derive(Subcommand)]
-pub enum Encoding {
+pub(crate) enum Encoding {
     Hex { input: String },
     Base64 { input: String },
 }
 
 #[derive(Subcommand)]
-pub enum XorMethod {
+pub(crate) enum XorMethod {
     Fixed {
         #[arg(value_parser = |s: &str| s.parse::<Hex>())]
         hex_first: Hex,
         #[arg(value_parser = |s: &str| s.parse::<Hex>())]
         hex_second: Hex,
     },
-}
-
-#[derive(Subcommand)]
-pub(crate) enum Encryption {
-    SingleByteXor {
-        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
-        encryption_string: Hex,
+    Crack {
+        #[command(flatten)]
+        input: Input,
+    },
+    Encrypt {
+        input: String,
     },
 }

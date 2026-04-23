@@ -46,27 +46,37 @@ fn english_frequencies() -> HashMap<u8, f64> {
 //  non alpha-numeric or space characters have penalty applied.
 fn chi_squared(text: &Bytes) -> f64 {
     let ascii = text.0.to_ascii_lowercase();
-    let mut total_count = 0.0;
-    let penalty = 0.3;
+    let len = ascii.len() as f64;
+    let mut matched = 0.0;
 
     let letter_score: f64 = english_frequencies()
         .iter()
         .map(|(&b, &f)| {
             let count = ascii.iter().filter(|&&c| c == b).count() as f64;
-            total_count += count;
-            let expected = ascii.len() as f64 * f;
-            ((count - expected) * (count - expected)) / expected
+            matched += count;
+            let expected = len * f;
+            (count - expected).powi(2) / expected
         })
         .sum();
 
-    letter_score + (penalty * (ascii.len() as f64 - total_count))
+    let other_count = (len - matched).max(0.0);
+    let other_expected = len * 0.05;
+    letter_score + (other_count - other_expected).powi(2) / other_expected
 }
 
-pub(crate) fn crack_single_byte_xor(ciphertext: &Bytes) -> ScoredCandidate {
+fn is_printable(text: &[u8]) -> bool {
+    text.iter()
+        .all(|&b| b == b'\n' || b == b'\r' || b == b'\t' || (0x20..=0x7e).contains(&b))
+}
+
+pub(crate) fn crack_single_byte_xor(ciphertext: &Bytes) -> Option<ScoredCandidate> {
     let mut scores_vec: Vec<ScoredCandidate> = Vec::new();
 
     for u in 0..=255u8 {
         let plaintext = Bytes(ciphertext.0.iter().map(|&b| b ^ u).collect::<Vec<u8>>());
+        if !is_printable(&plaintext.0) {
+            continue;
+        }
         let score = chi_squared(&plaintext);
         let sc = ScoredCandidate {
             key: u,
@@ -77,5 +87,9 @@ pub(crate) fn crack_single_byte_xor(ciphertext: &Bytes) -> ScoredCandidate {
     }
     scores_vec.sort_by(|a, b| a.score.total_cmp(&b.score));
 
-    scores_vec[0].clone()
+    if scores_vec.is_empty() {
+        None
+    } else {
+        Some(scores_vec[0].clone())
+    }
 }
