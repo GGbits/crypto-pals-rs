@@ -6,7 +6,8 @@ use clap::Parser;
 use cli::{Cli, Command, Conversion, Encoding};
 use types::{Base64, Bytes, Hex};
 
-use crate::cli::XorMethod;
+use crate::cli::{Encryption, XorMethod};
+use crate::score::{ScoredCandidate, crack_single_byte_xor};
 
 fn main() {
     let cli = Cli::parse();
@@ -65,6 +66,24 @@ fn main() {
                 ));
 
                 println!("{}", xored_hex)
+            }
+        },
+
+        Command::Crack { encryption } => match encryption {
+            Encryption::SingleByteXor { encryption_string } => {
+                let ciphertext = match Bytes::try_from(encryption_string) {
+                    Ok(val) => val,
+                    Err(err) => {
+                        println!("{}", err);
+                        return;
+                    }
+                };
+
+                let decoded_string = String::from_utf8_lossy(
+                    crack_single_byte_xor(&ciphertext).plaintext.0.as_slice(),
+                )
+                .to_string();
+                println!("{}", decoded_string);
             }
         },
     }

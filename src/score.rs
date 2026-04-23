@@ -43,17 +43,23 @@ fn english_frequencies() -> HashMap<u8, f64> {
 
 //  Chi Squared is: for each character c, compute (observed_count[c] - expected_count[c])^2 /
 //  expected_count[c], sum across all characters. Lower score = better English match.
+//  non alpha-numeric or space characters have penalty applied.
 fn chi_squared(text: &Bytes) -> f64 {
     let ascii = text.0.to_ascii_lowercase();
+    let mut total_count = 0.0;
+    let penalty = 0.3;
 
-    english_frequencies()
+    let letter_score: f64 = english_frequencies()
         .iter()
         .map(|(&b, &f)| {
             let count = ascii.iter().filter(|&&c| c == b).count() as f64;
+            total_count += count;
             let expected = ascii.len() as f64 * f;
             ((count - expected) * (count - expected)) / expected
         })
-        .sum()
+        .sum();
+
+    letter_score + (penalty * (ascii.len() as f64 - total_count))
 }
 
 pub(crate) fn crack_single_byte_xor(ciphertext: &Bytes) -> ScoredCandidate {
@@ -69,7 +75,6 @@ pub(crate) fn crack_single_byte_xor(ciphertext: &Bytes) -> ScoredCandidate {
         };
         scores_vec.push(sc);
     }
-
     scores_vec.sort_by(|a, b| a.score.total_cmp(&b.score));
 
     scores_vec[0].clone()

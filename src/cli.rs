@@ -22,6 +22,10 @@ pub enum Command {
         #[command(subcommand)]
         method: XorMethod,
     },
+    Crack {
+        #[command(subcommand)]
+        encryption: Encryption,
+    },
 }
 
 // Convert options
@@ -50,5 +54,13 @@ pub enum XorMethod {
         hex_first: Hex,
         #[arg(value_parser = |s: &str| s.parse::<Hex>())]
         hex_second: Hex,
+    },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum Encryption {
+    SingleByteXor {
+        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
+        encryption_string: Hex,
     },
 }
