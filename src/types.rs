@@ -14,6 +14,16 @@ pub struct Base64(pub String);
 #[derive(Debug)]
 pub struct DecodeError(pub String);
 
+impl Bytes {
+    pub(crate) fn hamming_distance(&self, other: &Bytes) -> u32 {
+        self.0
+            .iter()
+            .zip(other.0.iter())
+            .map(|(&b1, &b2)| (b1 ^ b2).count_ones())
+            .sum()
+    }
+}
+
 impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "DecodeError: {}", self.0)

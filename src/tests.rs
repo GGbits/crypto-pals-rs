@@ -84,3 +84,12 @@ fn test_hex_invalid_len() {
         Base64::from_str(str).unwrap_err().type_id()
     )
 }
+
+#[test]
+fn test_hamming_distance() {
+    let b1 = Bytes(b"this is a test".to_vec());
+    let b2 = Bytes(b"wokka wokka!!!".to_vec());
+
+    let result = b1.hamming_distance(&b2);
+    assert_eq!(result, 37u32)
+}
