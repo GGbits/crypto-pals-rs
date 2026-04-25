@@ -1,4 +1,5 @@
 mod cli;
+mod crypt;
 mod score;
 mod types;
 

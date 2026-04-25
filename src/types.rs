@@ -22,6 +22,13 @@ impl Bytes {
             .map(|(&b1, &b2)| (b1 ^ b2).count_ones())
             .sum()
     }
+
+    pub(crate) fn chunks(&self, chunk_size: usize) -> Vec<Bytes> {
+        self.0
+            .chunks(chunk_size)
+            .map(|c| Bytes(c.to_vec()))
+            .collect()
+    }
 }
 
 impl fmt::Display for DecodeError {
@@ -74,7 +81,12 @@ impl FromStr for Base64 {
 impl FromStr for Hex {
     type Err = DecodeError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let trim_str = s.to_lowercase().trim().to_owned();
+        let mut trim_str: String = s
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect::<String>()
+            .to_lowercase();
+        trim_str.retain(|c| c != '\r' && c != '\n');
 
         if !trim_str.len().is_multiple_of(2) {
             return Err(DecodeError(String::from(
