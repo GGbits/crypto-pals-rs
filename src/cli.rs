@@ -52,17 +52,21 @@ pub(crate) enum Encoding {
 
 #[derive(Subcommand)]
 pub(crate) enum XorMethod {
-    Fixed {
-        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
-        hex_first: Hex,
-        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
-        hex_second: Hex,
-    },
     Crack {
+        #[command(flatten)]
+        input: Input,
+    },
+    CrackRepeating {
         #[command(flatten)]
         input: Input,
     },
     Encrypt {
         input: String,
+    },
+    Fixed {
+        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
+        hex_first: Hex,
+        #[arg(value_parser = |s: &str| s.parse::<Hex>())]
+        hex_second: Hex,
     },
 }

@@ -15,12 +15,22 @@ pub struct Base64(pub String);
 pub struct DecodeError(pub String);
 
 impl Bytes {
+    /// Zips the Bytes struct referenced with this one and then performs a bit OR against each byte sequentially to calculate
+    /// the distance between them. The distances are sumed to get the total distance.
     pub(crate) fn hamming_distance(&self, other: &Bytes) -> u32 {
         self.0
             .iter()
             .zip(other.0.iter())
             .map(|(&b1, &b2)| (b1 ^ b2).count_ones())
             .sum()
+    }
+
+    /// Breaks the Bytes struct into "blocks" that align with the same key character in repeating
+    /// key setups.
+    pub(crate) fn transpose(&self, key_size: usize) -> Vec<Bytes> {
+        (0..key_size)
+            .map(|i| Bytes(self.0.iter().skip(i).step_by(key_size).copied().collect()))
+            .collect()
     }
 
     pub(crate) fn chunks(&self, chunk_size: usize) -> Vec<Bytes> {

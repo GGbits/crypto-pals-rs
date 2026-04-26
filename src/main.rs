@@ -3,11 +3,15 @@ mod crypt;
 mod score;
 mod types;
 
+use anyhow::{Result, anyhow};
 use clap::Parser;
 use cli::{Cli, Command, Conversion, Encoding, Input, XorMethod};
 use types::{Base64, Bytes, Hex};
 
-use crate::score::crack_single_byte_xor;
+use crate::{
+    crypt::detect_keysize,
+    score::{ScoredCandidate, crack_single_byte_xor},
+};
 
 fn main() {
     let cli = Cli::parse();
@@ -89,6 +93,36 @@ fn main() {
                 }
             }
 
+            XorMethod::CrackRepeating { input } => {
+                let enc_msg = read_b64_hex_to_bytes(input)
+                    .map_err(|e| println!("{}", e))
+                    .unwrap();
+
+                let key_size = detect_keysize(&enc_msg);
+                let blocks = enc_msg.transpose(key_size);
+
+                let sc_vec: Vec<ScoredCandidate> =
+                    blocks.iter().flat_map(crack_single_byte_xor).collect();
+
+                if sc_vec.is_empty() {
+                    println!("Error: No Scores were generated from input.")
+                }
+
+                let key: Vec<u8> = sc_vec.iter().map(|sc| sc.key).collect();
+                let key_str = String::from_utf8_lossy(&key);
+
+                let msg: Vec<u8> = (0..sc_vec[0].plaintext.0.len())
+                    .flat_map(|i| {
+                        sc_vec
+                            .iter()
+                            .filter_map(move |c| c.plaintext.0.get(i).copied())
+                    })
+                    .collect();
+                let msg_str = String::from_utf8_lossy(&msg);
+
+                println!("Key: {}\nMsg:\n{}", key_str, msg_str);
+            }
+
             XorMethod::Encrypt { input } => {
                 let key = rpassword::prompt_password("Key: ")
                     .expect("failed to read key")
@@ -123,6 +157,22 @@ fn resolve_input(input: Input) -> Result<Vec<Hex>, String> {
             .collect()
     } else {
         Err("error: provide either a hex string or --file <path>".to_string())
+    }
+}
+
+fn read_b64_hex_to_bytes(input: Input) -> Result<Bytes> {
+    if let Some(val) = input.value {
+        Ok(Bytes::try_from(Hex::try_from(val.parse::<Base64>()?)?)?)
+    } else if let Some(path) = input.file {
+        let mut contents = std::fs::read_to_string(&path)?;
+        contents.retain(|c| c != '\r' && c != '\n');
+        Ok(Bytes::try_from(Hex::try_from(
+            contents.parse::<Base64>()?,
+        )?)?)
+    } else {
+        Err(anyhow!(
+            "error: provide either a base64 string or --file <path>"
+        ))
     }
 }
 
